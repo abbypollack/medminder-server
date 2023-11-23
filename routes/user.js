@@ -70,4 +70,18 @@ router.post('/drugs', authorize, async (req, res) => {
     }
   });
 
+  //handle updates to the user's profile
+  router.post('/updateProfile', async (req, res) => {
+    const { userId } = req.user;
+    const { firstName, lastName, phone } = req.body;
+  
+    try {
+      await knex('users').where({ id: userId }).update({ firstName, lastName, phone });
+      res.status(200).json({ message: "Profile updated successfully." });
+    } catch (error) {
+      res.status(500).json({ message: "Error updating profile.", error });
+    }
+  });
+  
+
 module.exports = router;
