@@ -23,6 +23,9 @@ app.use('/auth', authRoutes);
 const drugInteractionRoutes = require('./routes/drugInteraction');
 app.use('/api/drug', drugInteractionRoutes);
 
+const userRoutes = require('./routes/user');
+app.use('/api/users', userRoutes);
+
 
 // ...
 const PORT = process.env.PORT || 3000;
