@@ -1,15 +1,20 @@
+const casual = require('casual');
+
+const users = [];
+for (let i = 0; i < 10; i++) {
+  users.push({
+    googleId: casual.uuid,      
+    name: casual.full_name,    
+    email: casual.email,        
+    password: casual.password,  
+    avatar_url: casual.url,     
+    phone: casual.phone        
+  });
+}
+
 exports.seed = function(knex) {
   return knex('users').del()
     .then(function () {
-      return knex('users').insert([
-        {
-          googleId: '123', 
-          name: 'John Doe', 
-          email: 'johndoe@example.com', 
-          password: 'hashed_password', 
-          avatar_url: 'http://example.com/avatar.jpg',
-          phone: '1234567890'
-        },
-      ]);
+      return knex('users').insert(users);
     });
 };

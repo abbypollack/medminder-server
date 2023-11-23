@@ -7,12 +7,15 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate": "knex migrate:latest",
     "rollback": "knex migrate:rollback",
+    "make": "knex migrate:make",
     "seed": "knex seed:run",
     "start": "nodemon index"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.2",
+    "casual": "^1.6.2",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

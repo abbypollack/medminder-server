@@ -56,4 +56,18 @@ router.get('/current', (req, res) => {
     }
 });
 
+// Save a drug to user's profile (/api/users/drugs)
+router.post('/drugs', authorize, async (req, res) => {
+    const { userId } = req.user;
+    const { drugName, strength, rxnormId } = req.body;
+  
+    try {
+      await knex('user_drugs').insert({ user_id: userId, drug_name: drugName, strength: strength, rxnorm_id: rxnormId});
+      res.status(201).json({ message: "Drug saved to profile." });
+    } catch (error) {
+      console.error('Error saving drug:', error);
+      res.status(500).json({ message: "Error saving drug to profile." });
+    }
+  });
+
 module.exports = router;
