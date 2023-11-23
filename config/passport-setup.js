@@ -8,34 +8,29 @@ passport.use(new GoogleStrategy({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.GOOGLE_CALLBACK_URL
   },
-  (_accessToken, _refreshToken, profile, done) => {
-    console.log('Google profile:', profile);
+  async (_accessToken, _refreshToken, profile, done) => {
+    try {
+      let user = await knex('users')
+        .select('*')
+        .where({ googleId: profile.id })
+        .first();
 
-    knex('users')
-      .select('id')
-      .where({ googleId: profile.id })
-      .then(users => {
-        if (users.length) {
-          done(null, users[0]);
-        } else {
-          knex('users')
-            .insert({
-              googleId: profile.id,
-              avatar_url: profile.photos[0].value,
-              username: profile.displayName
-            })
-            .returning('id')
-            .then(userId => {
-              done(null, { id: userId[0] });
-            })
-            .catch(err => {
-              console.log('Error creating a user', err);
-            });
-        }
-      })
-      .catch(err => {
-        console.log('Error fetching a user', err);
-      });
+      if (!user) {
+        const newUser = {
+          googleId: profile.id,
+          avatar_url: profile.photos[0].value,
+          username: profile.displayName,
+          email: profile.emails[0].value
+        };
+        const userId = await knex('users').insert(newUser).returning('id');
+        user = { id: userId[0], ...newUser };
+      }
+
+      done(null, user);
+    } catch (err) {
+      console.log('Error processing Google OAuth', err);
+      done(err, null);
+    }
   }
 ));
 
