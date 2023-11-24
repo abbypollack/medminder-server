@@ -105,7 +105,7 @@ router.post('/drugs', authorize, async (req, res) => {
   });
 
   //handle updates to the user's profile
-  router.post('/updateProfile', authorize, async (req, res) => {
+  router.patch('/updateProfile', authorize, async (req, res) => {
     const { userId } = req.user;
     const { firstName, lastName, phone } = req.body;
   
