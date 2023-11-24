@@ -1,0 +1,121 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const router = express.Router();
+const knex = require('../knexfile');
+
+const JWT_SECRET = process.env.SESSION_SECRET;
+
+// Authorize middleware
+const authorize = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ message: "Authorization header is missing" });
+    }
+
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = { userId: decoded.userId };
+        next();
+    } catch (error) {
+        res.status(401).json({ message: "Invalid or expired token" });
+    }
+};
+
+// Register user
+router.post('/register', async (req, res) => {
+    const { email, password, ...otherData } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required." });
+    }
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const [userId] = await knex('users')
+                             .insert({ ...otherData, email, password: hashedPassword })
+                             .returning('id');
+        const user = await knex('users').where({ id: userId }).first();
+        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
+        res.status(201).json({ user, token });
+    } catch (error) {
+        console.error('Error in /register route:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            res.status(409).json({ message: "Email already exists." });
+        } else {
+            res.status(500).json({ message: "Internal Server Error", error: error.message });
+        }
+    }
+});
+
+// User login
+router.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await knex('users').where({ email }).first();
+        if (user && bcrypt.compareSync(password, user.password)) {
+            const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
+            console.log('Sending user and token:', user, token);
+            res.json({ token });
+        } else {
+            res.status(401).json({ message: "Invalid credentials." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Error logging in." });
+    }
+});
+
+//  Current user
+router.get('/current', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ message: "No token provided." });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded.userId;
+        const user = await knex('users').where({ id: userId }).first();
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        console.log('Current user:', user)
+        res.json({ user });
+    } catch (error) {
+        if (error.name === "JsonWebTokenError") {
+            res.status(401).json({ message: "Invalid token." });
+        } else {
+            res.status(500).json({ message: "Internal server error." });
+        }
+    }
+});
+
+
+// Save a drug to user's profile (/api/users/drugs)
+router.post('/drugs', authorize, async (req, res) => {
+    const { userId } = req.user;
+    const { drugName, strength, rxnormId } = req.body;
+  
+    try {
+      await knex('user_drugs').insert({ user_id: userId, drug_name: drugName, strength: strength, rxnorm_id: rxnormId});
+      res.status(201).json({ message: "Drug saved to profile." });
+    } catch (error) {
+      console.error('Error saving drug:', error);
+      res.status(500).json({ message: "Error saving drug to profile." });
+    }
+  });
+
+  //handle updates to the user's profile
+  router.post('/updateProfile', authorize, async (req, res) => {
+    const { userId } = req.user;
+    const { firstName, lastName, phone } = req.body;
+  
+    try {
+      await knex('users').where({ id: userId }).update({ firstName, lastName, phone });
+      res.status(200).json({ message: "Profile updated successfully." });
+    } catch (error) {
+      res.status(500).json({ message: "Error updating profile.", error });
+    }
+  });
+  
+
+module.exports = router;
