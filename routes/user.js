@@ -35,7 +35,12 @@ router.post('/register', async (req, res) => {
         await knex('users').insert({ ...otherData, email, password: hashedPassword });
         res.status(201).json({ message: "User created successfully." });
     } catch (error) {
-        res.status(500).json({ message: "Error registering user." });
+        console.error('Error in /register route:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            res.status(409).json({ message: "Email already exists." });
+        } else {
+            res.status(500).json({ message: "Internal Server Error", error: error.message });
+        }
     }
 });
 
