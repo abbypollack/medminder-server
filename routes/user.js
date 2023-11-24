@@ -29,11 +29,14 @@ router.post('/register', async (req, res) => {
     if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required." });
     }
-
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        await knex('users').insert({ ...otherData, email, password: hashedPassword });
-        res.status(201).json({ message: "User created successfully." });
+        const [userId] = await knex('users')
+                             .insert({ ...otherData, email, password: hashedPassword })
+                             .returning('id');
+        const user = await knex('users').where({ id: userId }).first();
+        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
+        res.status(201).json({ user, token });
     } catch (error) {
         console.error('Error in /register route:', error);
         if (error.code === 'ER_DUP_ENTRY') {
@@ -51,6 +54,7 @@ router.post('/login', async (req, res) => {
         const user = await knex('users').where({ email }).first();
         if (user && bcrypt.compareSync(password, user.password)) {
             const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
+            console.log('Sending user and token:', user, token);
             res.json({ token });
         } else {
             res.status(401).json({ message: "Invalid credentials." });
@@ -61,7 +65,7 @@ router.post('/login', async (req, res) => {
 });
 
 //  Current user
-router.get('/current', (req, res) => {
+router.get('/current', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
         return res.status(401).json({ message: "No token provided." });
@@ -70,13 +74,21 @@ router.get('/current', (req, res) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         const userId = decoded.userId;
-        knex('users').where({ id: userId }).first().then(user => {
-            res.json(user);
-        });
+        const user = await knex('users').where({ id: userId }).first();
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        console.log('Current user:', user)
+        res.json({ user });
     } catch (error) {
-        res.status(401).json({ message: "Invalid token." });
+        if (error.name === "JsonWebTokenError") {
+            res.status(401).json({ message: "Invalid token." });
+        } else {
+            res.status(500).json({ message: "Internal server error." });
+        }
     }
 });
+
 
 // Save a drug to user's profile (/api/users/drugs)
 router.post('/drugs', authorize, async (req, res) => {
