@@ -96,16 +96,24 @@ router.get('/current', async (req, res) => {
 // Save a drug to user's profile (/api/users/drugs)
 router.post('/drugs', authorize, async (req, res) => {
     const { userId } = req.user;
-    const { drugName, strength, rxnormId } = req.body;
+    const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
 
     try {
-        await db('user_drugs').insert({ user_id: userId, drug_name: drugName, strength: strength, rxnorm_id: rxnormId });
+        await db('user_drugs').insert({ 
+            user_id: userId, 
+            drug_name: drugName, 
+            strength,
+            rxnorm_id: rxnormId,
+            reminder_frequency: reminderFrequency,
+            reminder_times: JSON.stringify(reminderTimes)
+        });
         res.status(201).json({ message: "Drug saved to profile." });
     } catch (error) {
         console.error('Error saving drug:', error);
         res.status(500).json({ message: "Error saving drug to profile." });
     }
 });
+
 
 //handle updates to the user's profile
 router.patch('/updateProfile', authorize, async (req, res) => {

@@ -6,11 +6,12 @@ exports.up = function(knex) {
       table.string('drug_name').notNullable();
       table.string('rxnorm_id');
       table.string('strength');
+      table.string('reminder_frequency');
+      table.text('reminder_times');
       table.timestamps(true, true);
   });
 };
-  
-  exports.down = function(knex) {
-    return knex.schema.dropTable('user_drugs');
-  };
-  
+
+exports.down = function(knex) {
+  return knex.schema.dropTable('user_drugs');
+};
