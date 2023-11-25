@@ -18,7 +18,6 @@ async (_accessToken, _refreshToken, profile, done) => {
         googleId: profile.id,
         email: profile.emails[0].value,
         username: profile.displayName,
-        avatar_url: profile.photos[0].value,
       };
       const [userId] = await knex('users').insert(newUser).returning('id');
       done(null, { id: userId, ...newUser });
