@@ -35,8 +35,8 @@ router.post('/register', async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const [userId] = await db('users')
-                             .insert({ ...otherData, email, password: hashedPassword })
-                             .returning('id');
+            .insert({ ...otherData, email, password: hashedPassword })
+            .returning('id');
         const user = await db('users').where({ id: userId }).first();
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
         res.status(201).json({ user, token });
@@ -97,26 +97,28 @@ router.get('/current', async (req, res) => {
 router.post('/drugs', authorize, async (req, res) => {
     const { userId } = req.user;
     const { drugName, strength, rxnormId } = req.body;
-  
-    try {
-      await db('user_drugs').insert({ user_id: userId, drug_name: drugName, strength: strength, rxnorm_id: rxnormId});
-      res.status(201).json({ message: "Drug saved to profile." });
-    } catch (error) {
-      console.error('Error saving drug:', error);
-      res.status(500).json({ message: "Error saving drug to profile." });
-    }
-  });
 
-  //handle updates to the user's profile
-  router.patch('/updateProfile', authorize, async (req, res) => {
+    try {
+        await db('user_drugs').insert({ user_id: userId, drug_name: drugName, strength: strength, rxnorm_id: rxnormId });
+        res.status(201).json({ message: "Drug saved to profile." });
+    } catch (error) {
+        console.error('Error saving drug:', error);
+        res.status(500).json({ message: "Error saving drug to profile." });
+    }
+});
+
+//handle updates to the user's profile
+router.patch('/updateProfile', authorize, async (req, res) => {
     const { userId } = req.user;
     const { firstName, lastName, phone } = req.body;
   
     try {
       await db('users').where({ id: userId }).update({ firstName, lastName, phone });
-      res.status(200).json({ message: "Profile updated successfully." });
+      const updatedUser = await db('users').where({ id: userId }).first();
+      res.status(200).json({ message: "Profile updated successfully.", updatedUser });
     } catch (error) {
-      res.status(500).json({ message: "Error updating profile.", error });
+      console.error('Error updating profile:', error);
+      res.status(500).json({ message: "Error updating profile.", error: error.message });
     }
   });
   
