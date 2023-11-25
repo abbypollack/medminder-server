@@ -8,6 +8,7 @@
     "migrate": "knex migrate:latest",
     "rollback": "knex migrate:rollback",
     "make": "knex migrate:make",
+    "status": "knex migrate:status",
     "seed": "knex seed:run",
     "start": "nodemon index"
   },
