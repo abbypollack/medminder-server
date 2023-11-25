@@ -108,7 +108,7 @@ router.get('/drugs', authorize, async (req, res) => {
 });
 
 
-// Save a drug to user's profile (/api/users/drugs)
+// Save a drug to user's profile
 router.post('/drugs', authorize, async (req, res) => {
     const { userId } = req.user;
     const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
@@ -129,8 +129,51 @@ router.post('/drugs', authorize, async (req, res) => {
     }
 });
 
+// Update a drug in user's profile
+router.patch('/drugs/:id', authorize, async (req, res) => {
+    const { userId } = req.user;
+    const { id } = req.params;
+    const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
 
-//handle updates to the user's profile
+    try {
+        await db('user_drugs')
+            .where({ user_id: userId, id: id })
+            .update({
+                drug_name: drugName,
+                strength,
+                rxnorm_id: rxnormId,
+                reminder_frequency: reminderFrequency,
+                reminder_times: JSON.stringify(reminderTimes)
+            });
+        res.status(200).json({ message: "Drug updated successfully." });
+    } catch (error) {
+        console.error('Error updating drug:', error);
+        res.status(500).json({ message: "Error updating drug in profile." });
+    }
+});
+
+// Delete a drug from user's profile
+router.delete('/drugs/:id', authorize, async (req, res) => {
+    const { userId } = req.user;
+    const { id } = req.params;
+
+    try {
+        const deletedRows = await db('user_drugs')
+            .where({ user_id: userId, id: id })
+            .del();
+
+        if (deletedRows > 0) {
+            res.status(200).json({ message: "Drug deleted successfully." });
+        } else {
+            res.status(404).json({ message: "Drug not found or does not belong to the user." });
+        }
+    } catch (error) {
+        console.error('Error deleting drug:', error);
+        res.status(500).json({ message: "Error deleting drug from profile." });
+    }
+});
+
+// Handle updates to the user's profile
 router.patch('/updateProfile', authorize, async (req, res) => {
     const { userId } = req.user;
     const { firstName, lastName, phone } = req.body;
