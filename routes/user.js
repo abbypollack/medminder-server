@@ -2,7 +2,10 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
-const knex = require('../knexfile');
+const knex = require('knex');
+const knexConfig = require('../knexfile');
+const db = knex(knexConfig);
+
 
 const JWT_SECRET = process.env.SESSION_SECRET;
 
@@ -31,10 +34,10 @@ router.post('/register', async (req, res) => {
     }
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const [userId] = await knex('users')
-                             .insert({ ...otherData, email, password: hashedPassword })
-                             .returning('id');
-        const user = await knex('users').where({ id: userId }).first();
+        const [userId] = await db('users')
+            .insert({ ...otherData, email, password: hashedPassword })
+            .returning('id');
+        const user = await db('users').where({ id: userId }).first();
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
         res.status(201).json({ user, token });
     } catch (error) {
@@ -51,7 +54,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
-        const user = await knex('users').where({ email }).first();
+        const user = await db('users').where({ email }).first();
         if (user && bcrypt.compareSync(password, user.password)) {
             const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
             console.log('Sending user and token:', user, token);
@@ -74,7 +77,7 @@ router.get('/current', async (req, res) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         const userId = decoded.userId;
-        const user = await knex('users').where({ id: userId }).first();
+        const user = await db('users').where({ id: userId }).first();
         if (!user) {
             return res.status(404).json({ message: "User not found." });
         }
@@ -94,26 +97,28 @@ router.get('/current', async (req, res) => {
 router.post('/drugs', authorize, async (req, res) => {
     const { userId } = req.user;
     const { drugName, strength, rxnormId } = req.body;
-  
-    try {
-      await knex('user_drugs').insert({ user_id: userId, drug_name: drugName, strength: strength, rxnorm_id: rxnormId});
-      res.status(201).json({ message: "Drug saved to profile." });
-    } catch (error) {
-      console.error('Error saving drug:', error);
-      res.status(500).json({ message: "Error saving drug to profile." });
-    }
-  });
 
-  //handle updates to the user's profile
-  router.post('/updateProfile', authorize, async (req, res) => {
+    try {
+        await db('user_drugs').insert({ user_id: userId, drug_name: drugName, strength: strength, rxnorm_id: rxnormId });
+        res.status(201).json({ message: "Drug saved to profile." });
+    } catch (error) {
+        console.error('Error saving drug:', error);
+        res.status(500).json({ message: "Error saving drug to profile." });
+    }
+});
+
+//handle updates to the user's profile
+router.patch('/updateProfile', authorize, async (req, res) => {
     const { userId } = req.user;
     const { firstName, lastName, phone } = req.body;
   
     try {
-      await knex('users').where({ id: userId }).update({ firstName, lastName, phone });
-      res.status(200).json({ message: "Profile updated successfully." });
+      await db('users').where({ id: userId }).update({ firstName, lastName, phone });
+      const updatedUser = await db('users').where({ id: userId }).first();
+      res.status(200).json({ message: "Profile updated successfully.", updatedUser });
     } catch (error) {
-      res.status(500).json({ message: "Error updating profile.", error });
+      console.error('Error updating profile:', error);
+      res.status(500).json({ message: "Error updating profile.", error: error.message });
     }
   });
   

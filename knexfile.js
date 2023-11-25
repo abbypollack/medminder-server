@@ -1,13 +1,11 @@
-const knex = require('knex');
+require('dotenv').config();
 
-const dbConfig = {
+module.exports = {
   client: 'mysql2',
   connection: {
     host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'rootroot',
+    database: process.env.DB_DATABASE || 'medminder'
   },
 };
-
-module.exports = knex(dbConfig);
