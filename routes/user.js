@@ -92,6 +92,21 @@ router.get('/current', async (req, res) => {
     }
 });
 
+// Fetch user's medications
+router.get('/drugs', authorize, async (req, res) => {
+    const { userId } = req.user;
+
+    try {
+        const userDrugs = await db('user_drugs')
+            .where({ user_id: userId })
+            .select('drug_name', 'strength', 'rxnorm_id', 'reminder_frequency', 'reminder_times');
+        res.json({ medications: userDrugs });
+    } catch (error) {
+        console.error('Error fetching user medications:', error);
+        res.status(500).json({ message: "Error fetching medications." });
+    }
+});
+
 
 // Save a drug to user's profile (/api/users/drugs)
 router.post('/drugs', authorize, async (req, res) => {
@@ -99,9 +114,9 @@ router.post('/drugs', authorize, async (req, res) => {
     const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
 
     try {
-        await db('user_drugs').insert({ 
-            user_id: userId, 
-            drug_name: drugName, 
+        await db('user_drugs').insert({
+            user_id: userId,
+            drug_name: drugName,
             strength,
             rxnorm_id: rxnormId,
             reminder_frequency: reminderFrequency,
@@ -119,16 +134,16 @@ router.post('/drugs', authorize, async (req, res) => {
 router.patch('/updateProfile', authorize, async (req, res) => {
     const { userId } = req.user;
     const { firstName, lastName, phone } = req.body;
-  
+
     try {
-      await db('users').where({ id: userId }).update({ firstName, lastName, phone });
-      const updatedUser = await db('users').where({ id: userId }).first();
-      res.status(200).json({ message: "Profile updated successfully.", updatedUser });
+        await db('users').where({ id: userId }).update({ firstName, lastName, phone });
+        const updatedUser = await db('users').where({ id: userId }).first();
+        res.status(200).json({ message: "Profile updated successfully.", updatedUser });
     } catch (error) {
-      console.error('Error updating profile:', error);
-      res.status(500).json({ message: "Error updating profile.", error: error.message });
+        console.error('Error updating profile:', error);
+        res.status(500).json({ message: "Error updating profile.", error: error.message });
     }
-  });
-  
+});
+
 
 module.exports = router;
