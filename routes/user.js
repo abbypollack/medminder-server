@@ -92,14 +92,38 @@ router.get('/current', async (req, res) => {
     }
 });
 
-
-// Save a drug to user's profile (/api/users/drugs)
-router.post('/drugs', authorize, async (req, res) => {
+// Fetch user's medications
+router.get('/drugs', authorize, async (req, res) => {
     const { userId } = req.user;
-    const { drugName, strength, rxnormId } = req.body;
 
     try {
-        await db('user_drugs').insert({ user_id: userId, drug_name: drugName, strength: strength, rxnorm_id: rxnormId });
+        const userDrugs = await db('user_drugs')
+            .where({ user_id: userId })
+            .select('id', 'drug_name', 'strength', 'rxnorm_id', 'reminder_frequency', 'reminder_times');
+
+        res.json({ medications: userDrugs });
+    } catch (error) {
+        console.error('Error fetching user medications:', error);
+        res.status(500).json({ message: "Error fetching medications." });
+    }
+});
+
+
+
+// Save a drug to user's profile
+router.post('/drugs', authorize, async (req, res) => {
+    const { userId } = req.user;
+    const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
+
+    try {
+        await db('user_drugs').insert({
+            user_id: userId,
+            drug_name: drugName,
+            strength,
+            rxnorm_id: rxnormId,
+            reminder_frequency: reminderFrequency,
+            reminder_times: JSON.stringify(reminderTimes)
+        });
         res.status(201).json({ message: "Drug saved to profile." });
     } catch (error) {
         console.error('Error saving drug:', error);
@@ -107,20 +131,64 @@ router.post('/drugs', authorize, async (req, res) => {
     }
 });
 
-//handle updates to the user's profile
+// Update a drug in user's profile
+router.patch('/drugs/:id', authorize, async (req, res) => {
+    const { userId } = req.user;
+    const { id } = req.params;
+    const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
+
+    try {
+        await db('user_drugs')
+            .where({ user_id: userId, id: id })
+            .update({
+                drug_name: drugName,
+                strength,
+                rxnorm_id: rxnormId,
+                reminder_frequency: reminderFrequency,
+                reminder_times: JSON.stringify(reminderTimes)
+            });
+        res.status(200).json({ message: "Drug updated successfully." });
+    } catch (error) {
+        console.error('Error updating drug:', error);
+        res.status(500).json({ message: "Error updating drug in profile." });
+    }
+});
+
+// Delete a drug from user's profile
+router.delete('/drugs/:id', authorize, async (req, res) => {
+    const { userId } = req.user;
+    const { id } = req.params;
+
+    try {
+        const deletedRows = await db('user_drugs')
+            .where({ user_id: userId, id: id })
+            .del();
+
+        if (deletedRows > 0) {
+            res.status(200).json({ message: "Drug deleted successfully." });
+        } else {
+            res.status(404).json({ message: "Drug not found or does not belong to the user." });
+        }
+    } catch (error) {
+        console.error('Error deleting drug:', error);
+        res.status(500).json({ message: "Error deleting drug from profile." });
+    }
+});
+
+// Handle updates to the user's profile
 router.patch('/updateProfile', authorize, async (req, res) => {
     const { userId } = req.user;
     const { firstName, lastName, phone } = req.body;
-  
+
     try {
-      await db('users').where({ id: userId }).update({ firstName, lastName, phone });
-      const updatedUser = await db('users').where({ id: userId }).first();
-      res.status(200).json({ message: "Profile updated successfully.", updatedUser });
+        await db('users').where({ id: userId }).update({ firstName, lastName, phone });
+        const updatedUser = await db('users').where({ id: userId }).first();
+        res.status(200).json({ message: "Profile updated successfully.", updatedUser });
     } catch (error) {
-      console.error('Error updating profile:', error);
-      res.status(500).json({ message: "Error updating profile.", error: error.message });
+        console.error('Error updating profile:', error);
+        res.status(500).json({ message: "Error updating profile.", error: error.message });
     }
-  });
-  
+});
+
 
 module.exports = router;
