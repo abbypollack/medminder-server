@@ -58,18 +58,17 @@ router.get('/logged', authorize, async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
 
   try {
-    const loggedMedications = await knex('user_drug_logs')
+    const loggedMedications = await db('user_drug_logs')
       .join('user_drugs', 'user_drugs.id', 'user_drug_logs.user_drug_id')
       .where('user_drugs.user_id', userId)
       .andWhereRaw('DATE(user_drug_logs.created_at) = ?', [today])
-      .select('user_drugs.drug_name', 'user_drugs.strength', 'user_drug_logs.action', 'user_drug_logs.created_at');
+      .select('user_drugs.drug_name', 'user_drugs.strength', 'user_drug_logs.action', 'user_drug_logs.created_at as action_time');
 
-    res.json({ loggedMedications });
+    res.json(loggedMedications);
   } catch (error) {
     console.error('Error fetching logged medications:', error);
-    res.status(500).json({ message: "Error fetching logged medications." });
+    res.status(500).json({ message: "Error fetching logged medications.", error: error.toString() });
   }
 });
 
-  
   module.exports = router;
