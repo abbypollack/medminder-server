@@ -4,7 +4,7 @@ exports.up = function(knex) {
       table.integer('user_id').unsigned().notNullable();
       table.foreign('user_id').references('users.id');
       table.string('drug_name').notNullable();
-      table.string('rxnorm_id');
+      table.string('rxNormId');
       table.string('strength');
       table.string('reminder_frequency');
       table.text('reminder_times');

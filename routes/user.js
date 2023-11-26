@@ -5,26 +5,10 @@ const router = express.Router();
 const knex = require('knex');
 const knexConfig = require('../knexfile');
 const db = knex(knexConfig);
+const authorize = require('../middleware/authorize');
 
 
 const JWT_SECRET = process.env.SESSION_SECRET;
-
-// Authorize middleware
-const authorize = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).json({ message: "Authorization header is missing" });
-    }
-
-    const token = authHeader.split(' ')[1];
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = { userId: decoded.userId };
-        next();
-    } catch (error) {
-        res.status(401).json({ message: "Invalid or expired token" });
-    }
-};
 
 // Register user
 router.post('/register', async (req, res) => {
@@ -99,7 +83,7 @@ router.get('/drugs', authorize, async (req, res) => {
     try {
         const userDrugs = await db('user_drugs')
             .where({ user_id: userId })
-            .select('id', 'drug_name', 'strength', 'rxnorm_id', 'reminder_frequency', 'reminder_times');
+            .select('id', 'drug_name', 'strength', 'rxNormId', 'reminder_frequency', 'reminder_times');
 
         res.json({ medications: userDrugs });
     } catch (error) {
@@ -112,15 +96,20 @@ router.get('/drugs', authorize, async (req, res) => {
 
 // Save a drug to user's profile
 router.post('/drugs', authorize, async (req, res) => {
+    console.log('Received request body:', req.body);
     const { userId } = req.user;
-    const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
+    const { drugName, strength, rxNormId, reminderFrequency, reminderTimes } = req.body;
+
+    if (!drugName || !rxNormId) {
+        return res.status(400).json({ message: "Drug name and RxNorm ID are required." });
+    }
 
     try {
         await db('user_drugs').insert({
             user_id: userId,
             drug_name: drugName,
             strength,
-            rxnorm_id: rxnormId,
+            rxNormId: rxNormId,
             reminder_frequency: reminderFrequency,
             reminder_times: JSON.stringify(reminderTimes)
         });
@@ -135,7 +124,7 @@ router.post('/drugs', authorize, async (req, res) => {
 router.patch('/drugs/:id', authorize, async (req, res) => {
     const { userId } = req.user;
     const { id } = req.params;
-    const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
+    const { drugName, strength, rxNormId, reminderFrequency, reminderTimes } = req.body;
 
     try {
         await db('user_drugs')
@@ -143,7 +132,7 @@ router.patch('/drugs/:id', authorize, async (req, res) => {
             .update({
                 drug_name: drugName,
                 strength,
-                rxnorm_id: rxnormId,
+                rxNormId: rxNormId,
                 reminder_frequency: reminderFrequency,
                 reminder_times: JSON.stringify(reminderTimes)
             });
@@ -189,6 +178,5 @@ router.patch('/updateProfile', authorize, async (req, res) => {
         res.status(500).json({ message: "Error updating profile.", error: error.message });
     }
 });
-
 
 module.exports = router;
