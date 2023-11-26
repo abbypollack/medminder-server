@@ -24,15 +24,9 @@ router.get('/today', authorize, async (req, res) => {
 });
   
  // Log action taken for a medication
-router.post('/:medicationId/:action', authorize, async (req, res) => {
-  const { medicationId, action } = req.params; // 'taken' or 'skipped'
+ router.post('/:medicationId/:action', authorize, async (req, res) => {
+  const { medicationId, action } = req.params;
   const { userId } = req.user;
-
-  // Log incoming request details
-  console.log(`Request to log medication action received:`);
-  console.log(`Medication ID: ${medicationId}`);
-  console.log(`Action: ${action}`);
-  console.log(`User ID: ${userId}`);
 
   try {
     const insertResult = await db('user_drug_logs').insert({
@@ -41,15 +35,23 @@ router.post('/:medicationId/:action', authorize, async (req, res) => {
       taken: action === 'taken'
     });
 
-    // Log the result of the insert operation
-    console.log(`Insert result: ${insertResult}`);
+    const drugDetails = await db('user_drugs')
+      .join('user_drug_logs', 'user_drugs.id', 'user_drug_logs.user_drug_id')
+      .where('user_drugs.id', medicationId)
+      .first('user_drugs.drug_name', 'user_drugs.strength', 'user_drug_logs.action_time');
 
-    res.status(200).json({ message: `Medication ${action} logged successfully.` });
+    res.status(200).json({
+      message: `Medication ${action} logged successfully.`,
+      drug_name: drugDetails.drug_name,
+      strength: drugDetails.strength,
+      action_time: drugDetails.action_time
+    });
   } catch (error) {
     console.error(`Error logging medication as ${action}:`, error);
     res.status(500).json({ message: `Error logging medication as ${action}.` });
   }
 });
+
 
   
   module.exports = router;
