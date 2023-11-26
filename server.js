@@ -26,8 +26,11 @@ app.use('/api/drug', drugInteractionRoutes);
 const userRoutes = require('./routes/user');
 app.use('/api/users', userRoutes);
 
+const medicationRoutes = require('./routes/medications');
+app.use('/api/medications', medicationRoutes);
+
 
 // ...
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 

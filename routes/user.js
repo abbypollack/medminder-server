@@ -115,6 +115,10 @@ router.post('/drugs', authorize, async (req, res) => {
     const { userId } = req.user;
     const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
 
+    if (!drugName) {
+        return res.status(400).json({ message: "Drug name is required." });
+    }
+
     try {
         await db('user_drugs').insert({
             user_id: userId,
@@ -189,6 +193,5 @@ router.patch('/updateProfile', authorize, async (req, res) => {
         res.status(500).json({ message: "Error updating profile.", error: error.message });
     }
 });
-
 
 module.exports = router;
