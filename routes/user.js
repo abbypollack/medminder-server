@@ -99,13 +99,15 @@ router.get('/drugs', authorize, async (req, res) => {
     try {
         const userDrugs = await db('user_drugs')
             .where({ user_id: userId })
-            .select('drug_name', 'strength', 'rxnorm_id', 'reminder_frequency', 'reminder_times');
+            .select('id', 'drug_name', 'strength', 'rxnorm_id', 'reminder_frequency', 'reminder_times');
+
         res.json({ medications: userDrugs });
     } catch (error) {
         console.error('Error fetching user medications:', error);
         res.status(500).json({ message: "Error fetching medications." });
     }
 });
+
 
 
 // Save a drug to user's profile
