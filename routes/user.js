@@ -83,7 +83,7 @@ router.get('/drugs', authorize, async (req, res) => {
     try {
         const userDrugs = await db('user_drugs')
             .where({ user_id: userId })
-            .select('id', 'drug_name', 'strength', 'rxnorm_id', 'reminder_frequency', 'reminder_times');
+            .select('id', 'drug_name', 'strength', 'rxNormId', 'reminder_frequency', 'reminder_times');
 
         res.json({ medications: userDrugs });
     } catch (error) {
@@ -96,11 +96,12 @@ router.get('/drugs', authorize, async (req, res) => {
 
 // Save a drug to user's profile
 router.post('/drugs', authorize, async (req, res) => {
+    console.log('Received request body:', req.body);
     const { userId } = req.user;
-    const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
+    const { drugName, strength, rxNormId, reminderFrequency, reminderTimes } = req.body;
 
-    if (!drugName) {
-        return res.status(400).json({ message: "Drug name is required." });
+    if (!drugName || !rxNormId) {
+        return res.status(400).json({ message: "Drug name and RxNorm ID are required." });
     }
 
     try {
@@ -108,7 +109,7 @@ router.post('/drugs', authorize, async (req, res) => {
             user_id: userId,
             drug_name: drugName,
             strength,
-            rxnorm_id: rxnormId,
+            rxNormId: rxNormId,
             reminder_frequency: reminderFrequency,
             reminder_times: JSON.stringify(reminderTimes)
         });
@@ -123,7 +124,7 @@ router.post('/drugs', authorize, async (req, res) => {
 router.patch('/drugs/:id', authorize, async (req, res) => {
     const { userId } = req.user;
     const { id } = req.params;
-    const { drugName, strength, rxnormId, reminderFrequency, reminderTimes } = req.body;
+    const { drugName, strength, rxNormId, reminderFrequency, reminderTimes } = req.body;
 
     try {
         await db('user_drugs')
@@ -131,7 +132,7 @@ router.patch('/drugs/:id', authorize, async (req, res) => {
             .update({
                 drug_name: drugName,
                 strength,
-                rxnorm_id: rxnormId,
+                rxNormId: rxNormId,
                 reminder_frequency: reminderFrequency,
                 reminder_times: JSON.stringify(reminderTimes)
             });
