@@ -3,8 +3,6 @@ const router = express.Router();
 
 const passport = require('passport');
 
-require('dotenv').config();
-
 // Google authentication endpoint
 router.get('/google', passport.authenticate('google', {
   scope: ['profile', 'email']

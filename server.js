@@ -1,10 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const passport = require('passport');
 const session = require('express-session');
 const cors = require('cors');
 const helmet = require('helmet');
-require('dotenv').config();
-require('./config/passport-setup');
 
 const app = express();
 
@@ -15,6 +14,8 @@ app.use(express.json());
 app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+require('./config/passport-setup');
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -33,4 +34,3 @@ app.use('/api/medications', medicationRoutes);
 // ...
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-

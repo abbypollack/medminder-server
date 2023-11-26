@@ -4,7 +4,6 @@ const knex = require('knex');
 const knexConfig = require('../knexfile');
 const db = knex(knexConfig);
 
-
 // Google OAuth Strategy
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
