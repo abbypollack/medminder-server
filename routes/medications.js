@@ -52,6 +52,24 @@ router.get('/today', authorize, async (req, res) => {
   }
 });
 
+// Fetch logged medications for the current day
+router.get('/logged', authorize, async (req, res) => {
+  const { userId } = req.user;
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    const loggedMedications = await knex('user_drug_logs')
+      .join('user_drugs', 'user_drugs.id', 'user_drug_logs.user_drug_id')
+      .where('user_drugs.user_id', userId)
+      .andWhereRaw('DATE(user_drug_logs.created_at) = ?', [today])
+      .select('user_drugs.drug_name', 'user_drugs.strength', 'user_drug_logs.action', 'user_drug_logs.created_at');
+
+    res.json({ loggedMedications });
+  } catch (error) {
+    console.error('Error fetching logged medications:', error);
+    res.status(500).json({ message: "Error fetching logged medications." });
+  }
+});
 
   
   module.exports = router;
