@@ -10,18 +10,24 @@ router.get('/google', passport.authenticate('google', {
 
 // Google auth callback
 router.get('/google/callback', passport.authenticate('google', {
-    failureRedirect: `${process.env.CLIENT_URL}/auth-fail`,
-  }), (req, res) => {
-    res.redirect(`${process.env.CLIENT_URL}/profile`);
-  }
+  failureRedirect: `${process.env.CLIENT_URL}/auth-fail`,
+}), (req, res) => {
+  res.redirect(`${process.env.CLIENT_URL}/profile`);
+}
 );
 
-router.get('/profile', (req, res) => {
-  if (req.user === undefined) {
-    return res.status(401).json({ message: 'Unauthorized' });
+// Facebook authentication endpoint
+router.get('/facebook', passport.authenticate('facebook', {
+  scope: ['email','public_profile']
+}));
+
+// Facebook auth callback
+router.get('/facebook/callback', passport.authenticate('facebook', {
+  failureRedirect: `${process.env.CLIENT_URL}/auth-fail`,
+}), (req, res) => {
+  res.redirect(`${process.env.CLIENT_URL}/profile`);;
   }
-  res.status(200).json(req.user);
-});
+);
 
 // Logout endpoint
 router.get('/logout', (req, res) => {
@@ -31,6 +37,13 @@ router.get('/logout', (req, res) => {
     }
     res.redirect(process.env.CLIENT_URL);
   });
+});
+
+router.get('/profile', (req, res) => {
+  if (req.user === undefined) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  res.status(200).json(req.user);
 });
 
 module.exports = router;
